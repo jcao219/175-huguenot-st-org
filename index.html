@@ -580,7 +580,7 @@
   <div class="threshold-counts">
     <span class="count-yes" id="count-yes">0</span>
     <span class="count-sep">/</span>
-    <span class="count-needed" id="count-needed">135</span>
+    <span class="count-needed" id="count-needed">130</span>
     <span class="count-label">affirmative votes needed</span>
   </div>
   <div class="track-wrap">
@@ -615,6 +615,7 @@
   <div class="building-wrap" id="building"></div>
 </div>
 
+<!-- Contact us form -->
 <section class="support-section" aria-labelledby="support-heading">
   <h2 id="support-heading">Show your support</h2>
   <form class="support-form" name="support" netlify>
@@ -660,7 +661,6 @@ const REGULAR = {
   10: [1001,1002,1003,1004,1005,1006,1007,1008],
   11: [1101,1102,1103,1104,1105,1106,1107,1108],
   12: [1201,1202,1203,1204,1205,1206,1207,1208],
-  13: [1301,1302,1303,1304,1305,1306,1307,1308],
   14: [1401,1402,1403,1404,1405,1406,1407,1408],
   15: [1501,1502,1503,1504,1505,1506,1507,1508],
   16: [1601,1602,1603,1604,1605,1606,1607,1608],
@@ -713,6 +713,9 @@ function saveToDisk(state) {
 }
 
 let savedState = loadSaved();
+const removedUnits = Object.keys(savedState).filter(unit => /^13\d{2}$/.test(unit));
+removedUnits.forEach(unit => delete savedState[unit]);
+if (removedUnits.length) saveToDisk(savedState);
 
 function cycleColor(chip) {
   let nextColor = '';
