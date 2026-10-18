@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Building Map</title>
+  <title>Bylaw Amendment | Building Map</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,24 +40,20 @@
     header h1 {
       font-size: 1rem; font-weight: 700; letter-spacing: -.02em; color: #94a3b8; white-space: nowrap;
     }
+    .bylaw-intro {
+      flex-basis: 100%;
+      display: grid;
+      gap: 4px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .bylaw-intro p {
+      color: #64748b;
+      font-size: .78rem;
+      line-height: 1.5;
+    }
 
     .h-actions { display: flex; align-items: center; gap: 8px; }
-
-    .h-controls {
-      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    }
-
-    /* search */
-    .search-box { position: relative; display: flex; align-items: center; }
-    .search-box span { position: absolute; left: 10px; font-size: .75rem; pointer-events: none; opacity: .5; }
-    .search-box input {
-      padding: 5px 12px 5px 28px;
-      border-radius: 16px; border: 1px solid #1e293b;
-      background: #131926; color: #e2e8f0;
-      font-family: inherit; font-size: .73rem; outline: none; width: 140px;
-      transition: border-color .2s;
-    }
-    .search-box input:focus { border-color: #3b82f6; }
 
     /* legend */
     .legend {
@@ -313,8 +309,6 @@
       box-sizing: border-box;
       touch-action: pan-y;
     }
-    .floor-row.hidden { display: none; }
-
     /* ── Support form ── */
     .support-section {
       width: min(100% - 32px, 480px);
@@ -463,9 +457,6 @@
     .unit.s-blue { background: #1d4ed8; border-color: #2563eb; color: #eff6ff; }
     .unit.s-red  { background: #b91c1c; border-color: #dc2626; color: #fff1f2; }
 
-    /* search highlight ring */
-    .unit.found { outline: 2px solid #facc15; outline-offset: 1px; }
-
     /* ── Mobile Responsive Overrides ── */
     @media (max-width: 600px) {
       :root {
@@ -490,20 +481,6 @@
       }
       .fit-toggle-btn {
         display: inline-flex;
-      }
-      .h-controls {
-        width: 100%;
-        justify-content: space-between;
-        gap: 8px;
-      }
-      .search-box {
-        flex: 1;
-        max-width: 125px;
-      }
-      .search-box input {
-        width: 100%;
-        font-size: 14px;
-        padding: 4px 8px 4px 24px;
       }
       .legend {
         font-size: .67rem;
@@ -550,6 +527,10 @@
 <body>
 
 <header>
+  <section class="bylaw-intro" aria-labelledby="bylaw-heading">
+    <h1 id="bylaw-heading">⚖️ Bylaw Amendment</h1>
+    <p>Amend the condominium by-laws to change the building's legal name from Trump Plaza to Tower Plaza.</p>
+  </section>
   <div class="header-main">
     <h1>🏢 Building Map</h1>
     <div class="h-actions">
@@ -559,18 +540,11 @@
     </div>
   </div>
 
-  <div class="h-controls">
-    <div class="search-box">
-      <span>🔍</span>
-      <input id="search" type="text" placeholder="Find unit…" oninput="doSearch(this.value)" />
-    </div>
-
-    <div class="legend">
-      <span class="legend-item"><span class="legend-swatch swatch-blue"></span> Yes</span>
-      <span class="legend-item"><span class="legend-swatch swatch-red"></span> No</span>
-      <span class="legend-item"><span class="legend-swatch swatch-blank"></span> Undecided/Absent</span>
-      <span class="legend-hint">(click unit to cycle)</span>
-    </div>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-swatch swatch-blue"></span> Yes</span>
+    <span class="legend-item"><span class="legend-swatch swatch-red"></span> No</span>
+    <span class="legend-item"><span class="legend-swatch swatch-blank"></span> Undecided/Absent</span>
+    <span class="legend-hint">(click unit to cycle)</span>
   </div>
 </header>
 
@@ -789,7 +763,6 @@ function makeRow(floorKey, units) {
     const chip = document.createElement('div');
     chip.className = 'unit';
     chip.textContent = u;
-    chip.dataset.unit = String(u).toLowerCase();
     setupChipEvents(chip);
     row.appendChild(chip);
   });
@@ -805,7 +778,6 @@ building.appendChild(fragment);
 
 // Cache elements now that the DOM is fully constructed
 const allUnits = [...document.querySelectorAll('.unit')];
-const floorRows = [...document.querySelectorAll('.floor-row')];
 const TOTAL_UNITS = allUnits.length;
 const NEEDED_VOTES = Math.ceil(TOTAL_UNITS * 2 / 3);
 countNeededEl.textContent = NEEDED_VOTES;
@@ -850,25 +822,6 @@ function resetAll() {
   savedState = {};
   localStorage.removeItem(STORAGE_KEY);
   updateThreshold();
-}
-
-// ── Search ──
-function doSearch(q) {
-  q = q.trim().toLowerCase();
-  allUnits.forEach(c => c.classList.remove('found'));
-  floorRows.forEach(r => r.classList.remove('hidden'));
-  if (!q) return;
-
-  const matchedRows = new Set();
-  allUnits.forEach(c => {
-    if (c.dataset.unit.includes(q)) {
-      c.classList.add('found');
-      matchedRows.add(c.parentElement);
-    }
-  });
-  floorRows.forEach(r => {
-    if (!matchedRows.has(r)) r.classList.add('hidden');
-  });
 }
 
 // ── Simulate ──
