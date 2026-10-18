@@ -315,6 +315,105 @@
     }
     .floor-row.hidden { display: none; }
 
+    /* ── Support form ── */
+    .support-section {
+      width: min(100% - 32px, 480px);
+      margin: 40px auto;
+      padding: 24px;
+      background: #0d1220;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+    }
+    .support-section h2 {
+      margin-bottom: 20px;
+      color: #e2e8f0;
+      font-size: 1.25rem;
+      letter-spacing: -.02em;
+    }
+    .support-form {
+      display: grid;
+      gap: 16px;
+    }
+    .support-field {
+      display: grid;
+      gap: 7px;
+      color: #94a3b8;
+      font-size: .78rem;
+    }
+    .support-field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      background: #131926;
+      color: #e2e8f0;
+      font: inherit;
+      outline: none;
+    }
+    .support-field input:focus { border-color: #3b82f6; }
+    .support-vote {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+      border: 0;
+      color: #94a3b8;
+      font-size: .78rem;
+    }
+    .support-vote legend { margin-bottom: 4px; }
+    .support-vote-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .support-vote-option {
+      position: relative;
+      cursor: pointer;
+    }
+    .support-vote-option input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+    .support-vote-option span {
+      display: block;
+      padding: 10px;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 600;
+      transition: background .15s, border-color .15s;
+    }
+    .support-vote-option.yes span { color: #93c5fd; }
+    .support-vote-option.no span { color: #fca5a5; }
+    .support-vote-option.yes input:checked + span {
+      background: #1d4ed8;
+      border-color: #2563eb;
+      color: #eff6ff;
+    }
+    .support-vote-option.no input:checked + span {
+      background: #b91c1c;
+      border-color: #dc2626;
+      color: #fff1f2;
+    }
+    .support-vote-option input:focus-visible + span {
+      outline: 2px solid #e2e8f0;
+      outline-offset: 2px;
+    }
+    .support-submit {
+      justify-self: start;
+      padding: 9px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #1d4ed8;
+      color: #fff;
+      font: inherit;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .support-submit:hover { background: #2563eb; }
+
     /* unit chip */
     .unit {
       width: var(--unit-w);
@@ -515,6 +614,43 @@
 <div class="building-scroll-container">
   <div class="building-wrap" id="building"></div>
 </div>
+
+<section class="support-section" aria-labelledby="support-heading">
+  <h2 id="support-heading">Show your support</h2>
+  <form class="support-form" name="support" method="POST" data-netlify="true">
+    <input type="hidden" name="form-name" value="support" />
+    <label class="support-field">
+      Owner Name
+      <input type="text" name="owner-name" autocomplete="name" required />
+    </label>
+    <label class="support-field">
+      Phone
+      <input type="tel" name="phone" autocomplete="tel" required />
+    </label>
+    <label class="support-field">
+      Email
+      <input type="email" name="email" autocomplete="email" required />
+    </label>
+    <label class="support-field">
+      Unit Number
+      <input type="text" name="unit-number" autocomplete="off" required />
+    </label>
+    <fieldset class="support-vote">
+      <legend>Do you support the bylaw amendment?</legend>
+      <div class="support-vote-options">
+        <label class="support-vote-option yes">
+          <input type="radio" name="support" value="Yes" required />
+          <span>Yes</span>
+        </label>
+        <label class="support-vote-option no">
+          <input type="radio" name="support" value="No" required />
+          <span>No</span>
+        </label>
+      </div>
+    </fieldset>
+    <button class="support-submit" type="submit">Submit</button>
+  </form>
+</section>
 
 <script>
 const REGULAR = {
