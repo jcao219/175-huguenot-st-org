@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --unit-w: 66px;
+      --unit-h: 31px;
+      --unit-font: 0.82rem;
+      --row-gap: 4px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0c0f18;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding-bottom: 95px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(12,15,24,.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid #1e293b;
+      padding: 10px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      flex-wrap: wrap;
+    }
+    .header-main {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    header h1 {
+      font-size: 1rem; font-weight: 700; letter-spacing: -.02em; color: #94a3b8; white-space: nowrap;
+    }
+
+    .h-actions { display: flex; align-items: center; gap: 8px; }
+
+    .h-controls {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+
+    /* search */
+    .search-box { position: relative; display: flex; align-items: center; }
+    .search-box span { position: absolute; left: 10px; font-size: .75rem; pointer-events: none; opacity: .5; }
+    .search-box input {
+      padding: 5px 12px 5px 28px;
+      border-radius: 16px; border: 1px solid #1e293b;
+      background: #131926; color: #e2e8f0;
+      font-family: inherit; font-size: .73rem; outline: none; width: 140px;
+      transition: border-color .2s;
+    }
+    .search-box input:focus { border-color: #3b82f6; }
+
+    /* legend */
+    .legend {
+      display: flex; align-items: center; gap: 9px; font-size: .73rem; color: #94a3b8;
+    }
+    .legend-item { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .legend-swatch {
+      width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex-shrink: 0;
+    }
+    .swatch-blue  { background: #1d4ed8; }
+    .swatch-red   { background: #b91c1c; }
+    .swatch-blank { background: #141b2d; border: 1px solid #1e293b; }
+    .legend-hint  { font-size: .68rem; color: #475569; }
+
+    /* reset / sim / fit btns */
+    .reset-btn, .sim-toggle-btn, .fit-toggle-btn {
+      padding: 4px 10px; border-radius: 10px; border: 1px solid #1e293b;
+      background: transparent; font-family: inherit;
+      font-size: .7rem; cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .reset-btn { color: #64748b; }
+    .reset-btn:hover { border-color: #334155; color: #94a3b8; background: #131926; }
+    .sim-toggle-btn { color: #818cf8; border-color: #312e81; }
+    .sim-toggle-btn:hover, .sim-toggle-btn.open { background: #1e1b4b; border-color: #6366f1; color: #a5b4fc; }
+    .fit-toggle-btn {
+      display: none;
+      color: #60a5fa; border-color: #1e3a8a; background: rgba(30, 58, 138, 0.2);
+    }
+    .fit-toggle-btn:hover, .fit-toggle-btn.active {
+      background: #1d4ed8; color: #fff; border-color: #2563eb;
+    }
+
+    /* ── Simulation panel ── */
+    .sim-panel {
+      background: #0d1220;
+      border-bottom: 1px solid #1e293b;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .35s cubic-bezier(.4,0,.2,1), padding .35s;
+      padding: 0 24px;
+    }
+    .sim-panel.open {
+      max-height: 200px;
+      padding: 16px 24px;
+    }
+    .sim-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .sim-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 180px;
+      flex: 1;
+    }
+    .sim-field label {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #475569;
+      display: flex;
+      justify-content: space-between;
+    }
+    .sim-field label span {
+      color: #94a3b8;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .sim-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 99px;
+      outline: none;
+      cursor: pointer;
+      background: #1e293b;
+    }
+    .sim-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #6366f1;
+      border: 2px solid #0d1220;
+      cursor: pointer;
+      transition: transform .15s;
+    }
+    .sim-slider::-webkit-slider-thumb:hover { transform: scale(1.25); }
+    .sim-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .run-btn {
+      padding: 7px 18px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff;
+      font-family: inherit;
+      font-size: .75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      white-space: nowrap;
+    }
+    .run-btn:hover { opacity: .85; }
+    .run-btn:active { transform: scale(.96); }
+    .run-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .sim-result {
+      font-size: .68rem;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .sim-result b { color: #94a3b8; }
+
+    /* ── Threshold bar ── */
+    .threshold-bar {
+      background: #0d1220;
+      border-bottom: 1px solid #1e293b;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .threshold-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .threshold-counts {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .count-yes {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #60a5fa;
+      line-height: 1;
+      transition: color .3s;
+    }
+    .count-yes.met { color: #34d399; }
+    .count-sep { font-size: .8rem; color: #334155; }
+    .count-needed { font-size: .85rem; font-weight: 600; color: #475569; }
+    .count-label { font-size: .68rem; color: #334155; }
+    /* 2/3 tick mark — on wrap so it's isolated from the fill animation */
+    .track-wrap {
+      flex: 1;
+      min-width: 160px;
+      position: relative;
+    }
+    .track-wrap::after {
+      content: '2/3';
+      position: absolute;
+      left: 66.666%;
+      top: -16px;
+      transform: translateX(-50%);
+      font-size: .55rem;
+      color: #facc15;
+      font-weight: 700;
+      letter-spacing: .04em;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .track-wrap::before {
+      content: '';
+      position: absolute;
+      left: 66.666%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px;
+      height: 14px;
+      background: #facc15;
+      border-radius: 1px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .track {
+      height: 6px;
+      background: #1e293b;
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+    .track-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #1d4ed8, #60a5fa);
+      transition: width .35s cubic-bezier(.4,0,.2,1), background .35s;
+      max-width: 100%;
+    }
+    .track-fill.met {
+      background: linear-gradient(90deg, #059669, #34d399);
+    }
+    .threshold-status {
+      font-size: .72rem;
+      font-weight: 600;
+      white-space: nowrap;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #1e293b;
+      color: #475569;
+      transition: all .3s;
+    }
+    .threshold-status.met {
+      background: rgba(52,211,153,.1);
+      border-color: #34d399;
+      color: #34d399;
+    }
+    .threshold-status.close {
+      background: rgba(251,191,36,.07);
+      border-color: #fbbf24;
+      color: #fbbf24;
+    }
+
+    /* ── Building ── */
+    .building-scroll-container {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      box-sizing: border-box;
+    }
+
+    .building-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 8px 30px;
+      gap: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* floor row */
+    .floor-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: var(--row-gap);
+      padding: 2px 0;
+      border-bottom: 1px solid #0f1520;
+      width: 100%;
+      box-sizing: border-box;
+      touch-action: pan-y;
+    }
+    .floor-row.hidden { display: none; }
+
+    /* unit chip */
+    .unit {
+      width: var(--unit-w);
+      height: var(--unit-h);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-radius: 6px;
+      font-size: var(--unit-font);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.01em;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      flex-shrink: 0;
+      box-sizing: border-box;
+      transition: transform .08s, opacity .08s;
+      background: #141b2d;
+      border: 1px solid #1e293b;
+      color: #475569;
+      touch-action: pan-y;
+    }
+    .unit:hover { transform: scale(1.06); opacity: .9; }
+    .unit:active { transform: scale(.97); }
+
+    /* Wide mode (when toggled on mobile) */
+    .building-wrap.wide-mode {
+      --unit-w: 66px !important;
+      --unit-h: 31px !important;
+      --unit-font: 0.82rem !important;
+      --row-gap: 4px !important;
+      align-items: flex-start !important;
+      width: max-content !important;
+      min-width: 100% !important;
+    }
+    .building-wrap.wide-mode .floor-row {
+      justify-content: flex-start !important;
+      min-width: max-content !important;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    /* colour states */
+    .unit.s-blue { background: #1d4ed8; border-color: #2563eb; color: #eff6ff; }
+    .unit.s-red  { background: #b91c1c; border-color: #dc2626; color: #fff1f2; }
+
+    /* search highlight ring */
+    .unit.found { outline: 2px solid #facc15; outline-offset: 1px; }
+
+    /* ── Mobile Responsive Overrides ── */
+    @media (max-width: 600px) {
+      :root {
+        /* Automatically fit 8 units on the mobile screen with 16px padding & 7x3px gaps */
+        --unit-w: calc((100vw - 16px - 21px) / 8);
+        --unit-h: 29px;
+        --unit-font: clamp(0.62rem, 2.7vw, 0.74rem);
+        --row-gap: 3px;
+      }
+
+      header {
+        padding: 8px 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .header-main {
+        width: 100%;
+      }
+      header h1 {
+        font-size: .95rem;
+      }
+      .fit-toggle-btn {
+        display: inline-flex;
+      }
+      .h-controls {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .search-box {
+        flex: 1;
+        max-width: 125px;
+      }
+      .search-box input {
+        width: 100%;
+        font-size: 14px;
+        padding: 4px 8px 4px 24px;
+      }
+      .legend {
+        font-size: .67rem;
+        gap: 6px;
+      }
+      .legend-hint {
+        display: none;
+      }
+
+      .threshold-bar {
+        padding: 7px 12px;
+        gap: 8px;
+      }
+      .threshold-label {
+        font-size: .64rem;
+      }
+      .count-yes {
+        font-size: 1.15rem;
+      }
+      .count-needed {
+        font-size: .78rem;
+      }
+      .count-label {
+        display: none;
+      }
+      .track-wrap {
+        min-width: 100px;
+      }
+      .track-wrap::after {
+        font-size: .48rem;
+        top: -13px;
+      }
+      .threshold-status {
+        font-size: .65rem;
+        padding: 2px 7px;
+      }
+
+      .floor-row[id^="row-PH"] .unit {
+        width: clamp(52px, 20vw, 72px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-main">
+    <h1>🏢 Building Map</h1>
+    <div class="h-actions">
+      <button class="fit-toggle-btn" id="fit-toggle" onclick="toggleFitMode()" title="Toggle Fit to Screen / Wide View">📱 Fit</button>
+      <button class="reset-btn" onclick="resetAll()">Reset all</button>
+      <button class="sim-toggle-btn" id="sim-toggle" onclick="toggleSim()">🎲 Simulate</button>
+    </div>
+  </div>
+
+  <div class="h-controls">
+    <div class="search-box">
+      <span>🔍</span>
+      <input id="search" type="text" placeholder="Find unit…" oninput="doSearch(this.value)" />
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch swatch-blue"></span> Yes</span>
+      <span class="legend-item"><span class="legend-swatch swatch-red"></span> No</span>
+      <span class="legend-item"><span class="legend-swatch swatch-blank"></span> Undecided/Absent</span>
+      <span class="legend-hint">(click unit to cycle)</span>
+    </div>
+  </div>
+</header>
+
+<!-- Threshold bar -->
+<div class="threshold-bar">
+  <span class="threshold-label">⚖️ Bylaw Amendment</span>
+  <div class="threshold-counts">
+    <span class="count-yes" id="count-yes">0</span>
+    <span class="count-sep">/</span>
+    <span class="count-needed" id="count-needed">135</span>
+    <span class="count-label">affirmative votes needed</span>
+  </div>
+  <div class="track-wrap">
+    <div class="track">
+      <div class="track-fill" id="track-fill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="threshold-status" id="threshold-status">Threshold not met</div>
+</div>
+
+<!-- Simulation panel -->
+<div class="sim-panel" id="sim-panel">
+  <div class="sim-inner">
+    <div class="sim-field">
+      <label>Turnout <span id="turnout-val">75%</span></label>
+      <input class="sim-slider" id="turnout" type="range" min="0" max="100" value="75"
+             oninput="document.getElementById('turnout-val').textContent=this.value+'%'" />
+    </div>
+    <div class="sim-field">
+      <label>Affirmative (of voters) <span id="affirm-val">75%</span></label>
+      <input class="sim-slider" id="affirm" type="range" min="0" max="100" value="75"
+             oninput="document.getElementById('affirm-val').textContent=this.value+'%'" />
+    </div>
+    <div class="sim-actions">
+      <button class="run-btn" id="run-btn" onclick="runSimulation()">Run</button>
+      <div class="sim-result" id="sim-result"></div>
+    </div>
+  </div>
+</div>
+
+<div class="building-scroll-container">
+  <div class="building-wrap" id="building"></div>
+</div>
+
+<script>
+const REGULAR = {
+  7:  [701,702,703,704,705,706],
+  8:  [801,802,803,804,805,806,807,808],
+  9:  [901,902,903,904,905,906,907,908],
+  10: [1001,1002,1003,1004,1005,1006,1007,1008],
+  11: [1101,1102,1103,1104,1105,1106,1107,1108],
+  12: [1201,1202,1203,1204,1205,1206,1207,1208],
+  13: [1301,1302,1303,1304,1305,1306,1307,1308],
+  14: [1401,1402,1403,1404,1405,1406,1407,1408],
+  15: [1501,1502,1503,1504,1505,1506,1507,1508],
+  16: [1601,1602,1603,1604,1605,1606,1607,1608],
+  17: [1701,1702,1703,1704,1705,1706,1707,1708],
+  18: [1801,1802,1803,1804,1805,1806,1807,1808],
+  19: [1901,1902,1903,1904,1905,1906,1907,1908],
+  20: [2001,2002,2003,2004,2005,2006,2007,2008],
+  21: [2101,2102,2103,2104,2105,2106,2107,2108],
+  22: [2201,2202,2203,2204,2205,2206,2207,2208],
+  23: [2301,2302,2303,2304,2305],
+  24: [2401,2402,2403,2404,2405],
+  25: [2501,2502,2503,2504,2505],
+  26: [2601,2602,2603,2604,2605],
+  27: [2701,2702,2703,2704,2705],
+  28: [2801,2802,2803,2804,2805],
+  29: [2901,2902,2903,2904,2905],
+  30: [3001,3002,3003,3004,3005],
+  31: [3101,3102,3103,3104,3105],
+};
+const PH = {
+  'PH8': ['PH801','PH802','PH803','PH804'],
+  'PH7': ['PH701','PH702','PH703','PH704'],
+  'PH6': ['PH601','PH602','PH603','PH604'],
+  'PH5': ['PH501','PH502','PH503','PH504'],
+  'PH4': ['PH401','PH402','PH403','PH404'],
+  'PH3': ['PH301','PH302','PH303','PH304'],
+  'PH2': ['PH201','PH202','PH203','PH204'],
+  'PH1': ['PH101','PH102','PH103'],
+};
+
+const building = document.getElementById('building');
+const countYesEl = document.getElementById('count-yes');
+const countNeededEl = document.getElementById('count-needed');
+const trackFillEl = document.getElementById('track-fill');
+const statusEl = document.getElementById('threshold-status');
+const simPanel = document.getElementById('sim-panel');
+const simToggleBtn = document.getElementById('sim-toggle');
+const turnoutInput = document.getElementById('turnout');
+const affirmInput = document.getElementById('affirm');
+const simResultEl = document.getElementById('sim-result');
+const runBtn = document.getElementById('run-btn');
+
+const STORAGE_KEY = 'building-map-colors';
+
+function loadSaved() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function saveToDisk(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let savedState = loadSaved();
+
+function cycleColor(chip) {
+  let nextColor = '';
+  if (chip.classList.contains('s-blue')) {
+    chip.classList.remove('s-blue');
+    chip.classList.add('s-red');
+    nextColor = 's-red';
+  } else if (chip.classList.contains('s-red')) {
+    chip.classList.remove('s-red');
+    nextColor = '';
+  } else {
+    chip.classList.add('s-blue');
+    nextColor = 's-blue';
+  }
+
+  const unitNum = chip.textContent;
+  if (nextColor) savedState[unitNum] = nextColor;
+  else delete savedState[unitNum];
+  saveToDisk(savedState);
+
+  updateThreshold();
+}
+
+function toggleFitMode() {
+  const isWide = building.classList.toggle('wide-mode');
+  const btn = document.getElementById('fit-toggle');
+  if (isWide) {
+    btn.textContent = '↔ Wide';
+    btn.title = 'Wide view (scroll horizontally). Tap for Fit screen';
+    btn.classList.add('active');
+  } else {
+    btn.textContent = '📱 Fit';
+    btn.title = 'Fit to screen. Tap for Wide view';
+    btn.classList.remove('active');
+  }
+}
+
+let touchStartX = 0;
+let touchStartY = 0;
+let isTouchScroll = false;
+
+function setupChipEvents(chip) {
+  chip.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    isTouchScroll = false;
+  }, { passive: true });
+
+  chip.addEventListener('touchmove', (e) => {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    if (dx > 7 || dy > 7) {
+      isTouchScroll = true;
+    }
+  }, { passive: true });
+
+  chip.addEventListener('click', () => {
+    if (isTouchScroll) {
+      isTouchScroll = false;
+      return;
+    }
+    cycleColor(chip);
+  });
+}
+
+function makeRow(floorKey, units) {
+  const row = document.createElement('div');
+  row.className = 'floor-row';
+  row.id = 'row-' + floorKey;
+  units.forEach(u => {
+    const chip = document.createElement('div');
+    chip.className = 'unit';
+    chip.textContent = u;
+    chip.dataset.unit = String(u).toLowerCase();
+    setupChipEvents(chip);
+    row.appendChild(chip);
+  });
+  return row;
+}
+
+// Build rows in a fragment for a single DOM insertion
+const fragment = document.createDocumentFragment();
+Object.entries(PH).forEach(([fk, units]) => fragment.appendChild(makeRow(fk, units)));
+const regKeys = Object.keys(REGULAR).map(Number).sort((a,b) => b - a);
+regKeys.forEach(fk => fragment.appendChild(makeRow(fk, REGULAR[fk])));
+building.appendChild(fragment);
+
+// Cache elements now that the DOM is fully constructed
+const allUnits = [...document.querySelectorAll('.unit')];
+const floorRows = [...document.querySelectorAll('.floor-row')];
+const TOTAL_UNITS = allUnits.length;
+const NEEDED_VOTES = Math.ceil(TOTAL_UNITS * 2 / 3);
+countNeededEl.textContent = NEEDED_VOTES;
+
+// Restore saved colors
+allUnits.forEach(chip => {
+  const color = savedState[chip.textContent];
+  if (color === 's-blue' || color === 's-red') chip.classList.add(color);
+});
+updateThreshold();
+
+function updateThreshold() {
+  let yes = 0;
+  for (let i = 0; i < TOTAL_UNITS; i++) {
+    if (allUnits[i].classList.contains('s-blue')) yes++;
+  }
+  const pct = Math.min(100, (yes / TOTAL_UNITS) * 100);
+  const met = yes >= NEEDED_VOTES;
+  const close = !met && yes >= NEEDED_VOTES - 10;
+
+  countYesEl.textContent = yes;
+  countYesEl.className = 'count-yes' + (met ? ' met' : '');
+
+  trackFillEl.style.width = pct + '%';
+  trackFillEl.className = 'track-fill' + (met ? ' met' : '');
+
+  if (met) {
+    statusEl.textContent = '✓ Threshold met!';
+    statusEl.className = 'threshold-status met';
+  } else if (close) {
+    statusEl.textContent = `${NEEDED_VOTES - yes} more needed`;
+    statusEl.className = 'threshold-status close';
+  } else {
+    statusEl.textContent = yes === 0 ? 'No votes yet' : `${NEEDED_VOTES - yes} more needed`;
+    statusEl.className = 'threshold-status';
+  }
+}
+
+// ── Reset ──
+function resetAll() {
+  allUnits.forEach(chip => chip.classList.remove('s-blue', 's-red'));
+  savedState = {};
+  localStorage.removeItem(STORAGE_KEY);
+  updateThreshold();
+}
+
+// ── Search ──
+function doSearch(q) {
+  q = q.trim().toLowerCase();
+  allUnits.forEach(c => c.classList.remove('found'));
+  floorRows.forEach(r => r.classList.remove('hidden'));
+  if (!q) return;
+
+  const matchedRows = new Set();
+  allUnits.forEach(c => {
+    if (c.dataset.unit.includes(q)) {
+      c.classList.add('found');
+      matchedRows.add(c.parentElement);
+    }
+  });
+  floorRows.forEach(r => {
+    if (!matchedRows.has(r)) r.classList.add('hidden');
+  });
+}
+
+// ── Simulate ──
+function toggleSim() {
+  const open = simPanel.classList.toggle('open');
+  simToggleBtn.classList.toggle('open', open);
+}
+
+function runSimulation() {
+  const turnoutPct = parseInt(turnoutInput.value, 10) / 100;
+  const affirmPct  = parseInt(affirmInput.value, 10)  / 100;
+
+  // Fisher-Yates unbiased shuffle
+  const shuffled = allUnits.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = shuffled[i];
+    shuffled[i] = shuffled[j];
+    shuffled[j] = temp;
+  }
+
+  const nVoting   = Math.round(TOTAL_UNITS * turnoutPct);
+  const nAffirm   = Math.round(nVoting * affirmPct);
+  const nNegative = nVoting - nAffirm;
+
+  const assignments = new Map();
+  shuffled.slice(0, nAffirm).forEach(c => assignments.set(c, 's-blue'));
+  shuffled.slice(nAffirm, nVoting).forEach(c => assignments.set(c, 's-red'));
+  shuffled.slice(nVoting).forEach(c => assignments.set(c, ''));
+
+  runBtn.disabled = true;
+
+  const newState = {};
+  let i = 0;
+  const batchSize = 8;
+  function applyBatch() {
+    const end = Math.min(i + batchSize, TOTAL_UNITS);
+    for (; i < end; i++) {
+      const chip = allUnits[i];
+      const color = assignments.get(chip) || '';
+      chip.classList.remove('s-blue', 's-red');
+      if (color) {
+        chip.classList.add(color);
+        newState[chip.textContent] = color;
+      }
+    }
+    if (i < TOTAL_UNITS) {
+      requestAnimationFrame(applyBatch);
+    } else {
+      savedState = newState;
+      saveToDisk(savedState);
+      updateThreshold();
+      runBtn.disabled = false;
+      simResultEl.innerHTML =
+        `<b>${nAffirm}</b> yes · <b>${nNegative}</b> no · <b>${TOTAL_UNITS - nVoting}</b> abstain`;
+    }
+  }
+  applyBatch();
+}
+
+</script>
+</body>
+</html>
