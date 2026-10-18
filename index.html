@@ -26,13 +26,17 @@
 
     /* ── Header ── */
     header {
-      position: sticky; top: 0; z-index: 50;
       background: rgba(12,15,24,.94);
       backdrop-filter: blur(14px);
       border-bottom: 1px solid #1e293b;
       padding: 10px 20px;
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       flex-wrap: wrap;
+    }
+    .bylaw-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
     .header-main {
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -41,11 +45,8 @@
       font-size: 1rem; font-weight: 700; letter-spacing: -.02em; color: #94a3b8; white-space: nowrap;
     }
     .bylaw-intro {
-      flex-basis: 100%;
       display: grid;
       gap: 4px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #1e293b;
     }
     .bylaw-intro p {
       color: #64748b;
@@ -526,11 +527,14 @@
 </head>
 <body>
 
-<header>
+<header class="bylaw-header">
   <section class="bylaw-intro" aria-labelledby="bylaw-heading">
     <h1 id="bylaw-heading">⚖️ Bylaw Amendment</h1>
     <p>Amend the condominium by-laws to change the building's legal name from Trump Plaza to Tower Plaza.</p>
   </section>
+</header>
+
+<header>
   <div class="header-main">
     <h1>🏢 Building Map</h1>
     <div class="h-actions">
